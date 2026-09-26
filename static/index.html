@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Podcasts</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --surface-2: #efede8; --border: #dedbd3;
+    --text: #1d1c1a; --muted: #6d6a63; --accent: #2f6fdb; --accent-text: #fff;
+    --ok: #1f9d55; --warn: #c98a12; --err: #d0453a;
+    --radius: 10px; --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 4px 16px rgb(0 0 0 / .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515; --surface: #1e1e1e; --surface-2: #272727; --border: #333;
+      --text: #ecebe8; --muted: #9a978f; --accent: #5b92f0; --accent-text: #fff;
+      --ok: #3fc07a; --warn: #e0a83a; --err: #f06a5f; --shadow: 0 4px 16px rgb(0 0 0 / .4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: inherit; }
+  header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .bar { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 10px; align-items: center; }
+  .brand { font-weight: 700; font-size: 16px; text-decoration: none; margin-right: 6px; white-space: nowrap; }
+  .search { flex: 1; display: flex; gap: 6px; }
+  input[type=text], input[type=search], select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 0; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .search input { flex: 1; }
+  .btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px;
+    cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.small { padding: 3px 8px; font-size: 12.5px; }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 120px; }
+  h2 { font-size: 15px; margin: 22px 0 10px; color: var(--muted); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; cursor: pointer; position: relative; transition: transform .1s; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--surface-2); }
+  .card .meta { padding: 8px 10px 10px; }
+  .card .t { font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .a { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .badge { position: absolute; top: 6px; left: 6px; background: rgb(0 0 0 / .65); color: #fff;
+    font-size: 11.5px; border-radius: 6px; padding: 1px 6px; }
+  .card .x { position: absolute; top: 4px; right: 4px; background: rgb(0 0 0 / .55); color: #fff; border: 0;
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: none; }
+  .card:hover .x { display: block; }
+  .empty { color: var(--muted); padding: 30px 0; text-align: center; }
+  .pod-head { display: flex; gap: 18px; align-items: flex-start; }
+  .pod-head img { width: 140px; height: 140px; border-radius: var(--radius); object-fit: cover; flex-shrink: 0;
+    background: var(--surface-2); }
+  .pod-head h1 { margin: 0 0 2px; font-size: 22px; }
+  .pod-head .a { color: var(--muted); }
+  .pod-head .d { color: var(--muted); font-size: 13px; margin: 8px 0; display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden; }
+  .pod-head .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .toolbar { display: flex; gap: 8px; margin: 20px 0 10px; flex-wrap: wrap; align-items: center; }
+  .toolbar input { flex: 1; min-width: 180px; }
+  .toolbar .count { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .eps { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .ep { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 10px 12px; align-items: center;
+    border-top: 1px solid var(--border); }
+  .ep:first-child { border-top: 0; }
+  .ep:hover { background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+  .st { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 14px;
+    border: 1.5px solid var(--border); color: var(--muted); cursor: pointer; }
+  .st.full { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .st.half { border-color: var(--ok); color: var(--ok); }
+  .ep .t { font-weight: 550; cursor: pointer; }
+  .ep .sub { color: var(--muted); font-size: 12.5px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .ep .desc { color: var(--muted); font-size: 12.5px; margin-top: 4px; display: none; }
+  .ep.open .desc { display: block; }
+  .ep .acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .tag { font-size: 11.5px; border-radius: 5px; padding: 0 6px; background: var(--surface-2); }
+  .tag.ok { color: var(--ok); } .tag.run { color: var(--accent); }
+  mark { background: color-mix(in srgb, var(--warn) 35%, transparent); color: inherit; border-radius: 2px; }
+  /* jobs */
+  #jobs { position: fixed; right: 16px; bottom: 16px; width: min(400px, calc(100vw - 32px)); z-index: 20;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+    display: none; }
+  #jobs.show { display: block; }
+  #jobs .hd { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border);
+    cursor: pointer; font-weight: 600; }
+  #jobs .hd span { flex: 1; }
+  #jobs .list { max-height: 45vh; overflow: auto; }
+  #jobs.collapsed .list { display: none; }
+  .job { padding: 8px 10px; border-top: 1px solid var(--border); font-size: 13px; }
+  .job:first-child { border-top: 0; }
+  .job .row { display: flex; gap: 6px; align-items: center; }
+  .job .jt { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job .jm { color: var(--muted); font-size: 12px; white-space: pre-wrap; max-height: 5.5em; overflow: auto; margin-top: 2px; }
+  .job.error .jm { color: var(--err); }
+  .prog { height: 4px; border-radius: 2px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+  .prog div { height: 100%; background: var(--accent); transition: width .4s; }
+  dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);
+    padding: 18px 20px; width: min(460px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgb(0 0 0 / .35); }
+  dialog label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 13px; }
+  dialog input, dialog select { width: 100%; }
+  dialog .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30; }
+  #toast.show { opacity: 1; }
+  @media (max-width: 640px) {
+    .brand { display: none; }
+    .ep { grid-template-columns: 30px 1fr; }
+    .ep .acts { grid-column: 2; justify-content: flex-start; }
+    .pod-head img { width: 90px; height: 90px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="brand" href="#/">🎧 Podcasts</a>
+    <form class="search" id="searchForm">
+      <input type="search" id="q" placeholder="Podcast suchen oder RSS-Feed-URL einfügen…" autocomplete="off">
+      <select id="country" title="Store-Region für die Suche">
+        <option>DE</option><option>JP</option><option>US</option><option>GB</option><option>FR</option>
+        <option>ES</option><option>KR</option><option>CN</option><option>TW</option><option>AT</option><option>CH</option>
+      </select>
+      <button class="btn primary">Suchen</button>
+    </form>
+    <button class="btn ghost" id="settingsBtn" title="Einstellungen">⚙︎</button>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<div id="jobs">
+  <div class="hd" id="jobsHd"><span id="jobsTitle">Aufträge</span>
+    <button class="btn small ghost" id="jobsClear" title="Erledigte entfernen">Aufräumen</button>
+  </div>
+  <div class="list" id="jobsList"></div>
+</div>
+
+<dialog id="settings">
+  <form method="dialog" id="settingsForm">
+    <h3 style="margin:0 0 4px">Untertitel-Einstellungen</h3>
+    <label for="sEngine">Whisper-Engine</label>
+    <select id="sEngine">
+      <option value="mlx">mlx_whisper (Apple Silicon, schnell)</option>
+      <option value="openai">openai-whisper</option>
+    </select>
+    <label for="sModel">Modell</label>
+    <input type="text" id="sModel" list="sModels">
+    <datalist id="sModels"></datalist>
+    <div class="hint" id="sModelHint"></div>
+    <label for="sLang">Sprache</label>
+    <select id="sLang">
+      <option value="">Automatisch erkennen</option>
+      <option value="ja">Japanisch</option><option value="de">Deutsch</option><option value="en">Englisch</option>
+      <option value="zh">Chinesisch</option><option value="ko">Koreanisch</option><option value="es">Spanisch</option>
+      <option value="fr">Französisch</option><option value="pt">Portugiesisch</option><option value="it">Italienisch</option>
+    </select>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn" value="cancel">Abbrechen</button>
+      <button class="btn primary" value="save" id="sSave">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const view = $('#view');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: opts.body ? { 'Content-Type': 'application/json' } : {},
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).detail || msg; } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+function fmtDur(s) {
+  if (!s) return '';
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+
+// ------------------------------------------------------------ routing
+let current = null; // { id, data } of the open podcast
+
+function route() {
+  const h = location.hash.slice(1) || '/';
+  const [, kind, arg] = h.split('/');
+  if (kind === 'p' && arg) return showPodcast(arg);
+  if (kind === 's') return showSearch(decodeURIComponent(arg || ''));
+  current = null;
+  showHome();
+}
+window.addEventListener('hashchange', route);
+
+// ------------------------------------------------------------ home / search
+function card(p, { removable = false } = {}) {
+  const badge = p.downloaded ? `<span class="badge">${p.subtitled}/${p.downloaded} ✓</span>` : (p.followed ? '<span class="badge">★</span>' : '');
+  return `<div class="card" data-id="${esc(p.id)}" data-feed="${esc(p.feed || '')}">
+    ${badge}
+    ${removable ? '<button class="x" title="Aus Liste entfernen (Dateien bleiben)">×</button>' : ''}
+    <img loading="lazy" src="${esc(p.artwork)}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="meta"><div class="t">${esc(p.title)}</div><div class="a">${esc(p.author || p.genre || '')}</div></div>
+  </div>`;
+}
+
+async function showHome() {
+  $('#q').value = '';
+  view.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+  const lib = await api('/api/library');
+  const followed = lib.filter(p => p.followed), recent = lib.filter(p => !p.followed);
+  if (!lib.length) {
+    view.innerHTML = `<div class="empty">Noch keine Podcasts. Suche oben nach einem Podcast oder füge eine RSS-Feed-URL ein.</div>`;
+    return;
+  }
+  view.innerHTML =
+    (followed.length ? `<h2>Abonniert</h2><div class="grid">${followed.map(p => card(p, { removable: true })).join('')}</div>` : '') +
+    (recent.length ? `<h2>Zuletzt angesehen</h2><div class="grid">${recent.map(p => card(p, { removable: true })).join('')}</div>` : '');
+  view.querySelectorAll('.card').forEach(el => {
+    el.onclick = () => location.hash = `#/p/${el.dataset.id}`;
+    const x = $('.x', el);
+    if (x) x.onclick = async e => { e.stopPropagation(); await api(`/api/podcasts/${el.dataset.id}`, { method: 'DELETE' }); showHome(); };
+  });
+}
+
+async function showSearch(q) {
+  $('#q').value = q;
+  if (!q) return showHome();
+  view.innerHTML = '<div class="empty"><span class="spinner"></span> Suche…</div>';
+  let results;
+  try { results = await api(`/api/search?q=${encodeURIComponent(q)}&country=${$('#country').value}`); }
+  catch (e) { view.innerHTML = `<div class="empty">Suche fehlgeschlagen: ${esc(e.message)}</div>`; return; }
+  if (!results.length) { view.innerHTML = `<div class="empty">Keine Treffer für „${esc(q)}“.</div>`; return; }
+  view.innerHTML = `<h2>${results.length} Treffer für „${esc(q)}“</h2><div class="grid">${results.map(p => card(p)).join('')}</div>`;
+  view.querySelectorAll('.card').forEach((el, i) => el.onclick = async () => {
+    const r = results[i];
+    const { id } = await api('/api/podcasts', { method: 'POST', body: { feed: r.feed, title: r.title, author: r.author, artwork: r.artwork } });
+    location.hash = `#/p/${id}`;
+  });
+}
+
+$('#searchForm').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('#q').value.trim();
+  if (!q) return;
+  if (/^https?:\/\//i.test(q)) {
+    view.innerHTML = '<div class="empty"><span class="spinner"></span> Feed wird geladen…</div>';
+    try {
+      const { id } = await api('/api/podcasts', { method: 'POST', body: { feed: q } });
+      location.hash = `#/p/${id}`;
+    } catch (err) { view.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+    return;
+  }
+  const target = `#/s/${encodeURIComponent(q)}`;
+  if (location.hash === target) route(); else location.hash = target;
+};
+
+// ------------------------------------------------------------ podcast view
+const SORTS = {
+  'new': (a, b) => (b.date || 0) - (a.date || 0),
+  'old': (a, b) => (a.date || 0) - (b.date || 0),
+  'num-desc': (a, b) => (b.number ?? -1) - (a.number ?? -1) || (b.date || 0) - (a.date || 0),
+  'num-asc': (a, b) => (a.number ?? 1e9) - (b.number ?? 1e9) || (a.date || 0) - (b.date || 0),
+  'title': (a, b) => a.title.localeCompare(b.title, 'ja', { numeric: true }),
+  'dur-asc': (a, b) => (a.duration || 0) - (b.duration || 0),
+  'dur-desc': (a, b) => (b.duration || 0) - (a.duration || 0),
+};
+
+async function showPodcast(id, refresh = false) {
+  if (!current || current.id !== id) view.innerHTML = '<div class="empty"><span class="spinner"></span> Episoden werden geladen…</div>';
+  let data;
+  try { data = await api(`/api/podcasts/${id}${refresh ? '?refresh=true' : ''}`); }
+  catch (e) { view.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  const prefs = store.get('epPrefs:' + id, {});
+  current = { id, data, filter: '', sort: prefs.sort || store.get('epSort', 'new'), status: 'all' };
+  const p = data.podcast;
+  view.innerHTML = `
+    <div class="pod-head">
+      <img src="${esc(p.artwork)}" alt="" onerror="this.style.visibility='hidden'">
+      <div style="min-width:0">
+        <h1>${esc(p.title)}</h1>
+        <div class="a">${esc(p.author)}</div>
+        <div class="d">${esc(p.description)}</div>
+        <div class="actions">
+          <button class="btn small" id="follow">${p.followed ? '★ Abonniert' : '☆ Abonnieren'}</button>
+          <button class="btn small" id="openDir">Ordner öffnen</button>
+          <button class="btn small" id="refresh">Feed aktualisieren</button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="epFilter" placeholder="Episoden durchsuchen… (z. B. 85)">
+      <select id="epSort">
+        <option value="new">Neueste zuerst</option>
+        <option value="old">Älteste zuerst</option>
+        <option value="num-desc">Episodennr. absteigend</option>
+        <option value="num-asc">Episodennr. aufsteigend</option>
+        <option value="title">Titel A–Z</option>
+        <option value="dur-desc">Längste zuerst</option>
+        <option value="dur-asc">Kürzeste zuerst</option>
+      </select>
+      <select id="epStatus">
+        <option value="all">Alle</option>
+        <option value="subs">✓ Mit Untertiteln</option>
+        <option value="media">Heruntergeladen</option>
+        <option value="open">Noch offen</option>
+      </select>
+      <span class="count" id="epCount"></span>
+    </div>
+    <div class="eps" id="eps"></div>`;
+  $('#epSort').value = current.sort;
+  $('#epFilter').oninput = e => { current.filter = e.target.value; renderEpisodes(); };
+  $('#epSort').onchange = e => { current.sort = e.target.value; store.set('epSort', current.sort); store.set('epPrefs:' + id, { sort: current.sort }); renderEpisodes(); };
+  $('#epStatus').onchange = e => { current.status = e.target.value; renderEpisodes(); };
+  $('#follow').onclick = async () => {
+    p.followed = !p.followed;
+    await api(`/api/podcasts/${id}`, { method: 'PATCH', body: { followed: p.followed } });
+    $('#follow').textContent = p.followed ? '★ Abonniert' : '☆ Abonnieren';
+  };
+  $('#openDir').onclick = () => api('/api/episodes/reveal', { method: 'POST', body: { podcast_id: id, episode_id: '' } });
+  $('#refresh').onclick = () => showPodcast(id, true);
+  renderEpisodes();
+}
+
+function matcher(q) {
+  q = q.trim();
+  if (!q) return null;
+  if (/^\d+$/.test(q)) {
+    const n = Number(q);
+    const re = new RegExp(`(?<!\\d)${q}(?!\\d)`);
+    return ep => ep.number === n || re.test(ep.title);
+  }
+  const words = q.toLowerCase().split(/\s+/);
+  return ep => { const t = ep.title.toLowerCase(); return words.every(w => t.includes(w)); };
+}
+
+function highlight(title, q) {
+  q = q.trim();
+  if (!q) return esc(title);
+  const parts = /^\d+$/.test(q) ? [q] : q.split(/\s+/);
+  const re = new RegExp(parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
+  let out = '', last = 0;
+  for (const m of title.matchAll(re)) {
+    out += esc(title.slice(last, m.index)) + `<mark>${esc(m[0])}</mark>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(title.slice(last));
+}
+
+function epState(eid) {
+  const s = current.data.status[eid] || {};
+  const job = activeJobs.find(j => j.podcast_id === current.id && j.episode_id === eid);
+  return { media: !!s.media, subs: !!s.subs, done: !!s.done, job };
+}
+
+const JOB_LABEL = { queued: 'Wartet', downloading: 'Lädt', converting: 'Konvertiert', transcribing: 'Transkribiert' };
+
+function renderEpisodes() {
+  const { data, filter, sort, status } = current;
+  const m = matcher(filter);
+  let eps = data.episodes.filter(ep => {
+    if (m && !m(ep)) return false;
+    if (status === 'all') return true;
+    const s = epState(ep.id);
+    if (status === 'subs') return s.subs || s.done;
+    if (status === 'media') return s.media;
+    if (status === 'open') return !(s.subs || s.done);
+    return true;
+  });
+  eps = eps.slice().sort(SORTS[sort]);
+  $('#epCount').textContent = `${eps.length} von ${data.episodes.length} Episoden`;
+  const LIMIT = 300;
+  const shown = eps.slice(0, current.limit || LIMIT);
+  $('#eps').innerHTML = shown.length ? shown.map(ep => episodeRow(ep)).join('') +
+    (eps.length > shown.length ? `<div class="ep" style="display:block;text-align:center"><button class="btn small" id="more">Alle ${eps.length} anzeigen</button></div>` : '')
+    : '<div class="empty">Keine passenden Episoden.</div>';
+  const more = $('#more'); if (more) more.onclick = () => { current.limit = 1e9; renderEpisodes(); };
+}
+
+function episodeRow(ep) {
+  const s = epState(ep.id);
+  const complete = (s.media && s.subs) || s.done;
+  const stCls = complete ? 'full' : (s.media ? 'half' : '');
+  const stIcon = complete ? '✓' : (s.media ? '↓' : '');
+  const stTitle = complete ? (s.done && !s.subs ? 'Manuell als erledigt markiert (klicken zum Entfernen)' : 'Audio + Untertitel vorhanden')
+    : (s.media ? 'Heruntergeladen, noch keine Untertitel – klicken, um als erledigt zu markieren' : 'Klicken, um als erledigt zu markieren (z. B. Migaku-Untertitel)');
+  let acts = '';
+  if (s.job) {
+    acts = `<span class="tag run">${JOB_LABEL[s.job.state]}${s.job.state !== 'queued' ? ' ' + Math.round(s.job.progress * 100) + ' %' : ''}</span>`;
+  } else {
+    if (!s.media) {
+      acts += `<button class="btn small primary" data-act="subs" title="Herunterladen, als MP4 speichern und mit Whisper Untertitel erzeugen">Laden + Untertitel</button>`;
+      acts += `<button class="btn small" data-act="dl" title="Nur herunterladen (MP4 für Migaku)">Nur laden</button>`;
+    } else {
+      if (!s.subs) acts += `<button class="btn small primary" data-act="subs" title="Untertitel mit Whisper erzeugen">Untertitel erzeugen</button>`;
+      acts += `<button class="btn small" data-act="reveal" title="Im Finder zeigen">Finder</button>`;
+      acts += `<button class="btn small ghost" data-act="delete" title="Heruntergeladene Dateien löschen">🗑</button>`;
+    }
+  }
+  const tags = [
+    ep.number != null ? `<span>#${ep.number}</span>` : '',
+    `<span>${fmtDate(ep.date)}</span>`,
+    ep.duration ? `<span>${fmtDur(ep.duration)}</span>` : '',
+    s.subs ? '<span class="tag ok">Untertitel</span>' : '',
+  ].join('');
+  return `<div class="ep" data-id="${ep.id}">
+    <div class="st ${stCls}" data-act="done" title="${stTitle}">${stIcon}</div>
+    <div style="min-width:0">
+      <div class="t" data-act="toggle">${highlight(ep.title, current.filter)}</div>
+      <div class="sub">${tags}</div>
+      <div class="desc">${esc(ep.description)}</div>
+    </div>
+    <div class="acts">${acts}</div>
+  </div>`;
+}
+
+view.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || !current) return;
+  const row = el.closest('.ep');
+  const eid = row?.dataset.id;
+  if (!eid) return;
+  const body = { podcast_id: current.id, episode_id: eid };
+  const act = el.dataset.act;
+  try {
+    if (act === 'toggle') { row.classList.toggle('open'); return; }
+    if (act === 'subs' || act === 'dl') {
+      const job = await api('/api/jobs', { method: 'POST', body: { ...body, subs: act === 'subs' } });
+      activeJobs.push(job); renderEpisodes(); pollJobs(true);
+    } else if (act === 'reveal') {
+      await api('/api/episodes/reveal', { method: 'POST', body });
+    } else if (act === 'delete') {
+      if (!confirm('Heruntergeladene Datei und Untertitel dieser Episode löschen?')) return;
+      await api('/api/episodes/delete', { method: 'POST', body });
+      await refreshStatus();
+    } else if (act === 'done') {
+      const s = epState(eid);
+      if (s.media && s.subs) return;
+      await api('/api/episodes/done', { method: 'POST', body });
+      await refreshStatus();
+    }
+  } catch (err) { toast(err.message); }
+});
+
+async function refreshStatus() {
+  if (!current) return;
+  current.data.status = await api(`/api/podcasts/${current.id}/status`);
+  renderEpisodes();
+}
+
+// ------------------------------------------------------------ jobs
+let activeJobs = [];
+let lastJobs = {};
+let pollTimer = null;
+
+async function pollJobs(now = false) {
+  clearTimeout(pollTimer);
+  if (!now) { /* scheduled call */ }
+  let list = [];
+  try { list = await api('/api/jobs'); } catch {}
+  const running = list.filter(j => ['queued', 'downloading', 'converting', 'transcribing'].includes(j.state));
+  let finishedHere = false;
+  for (const j of list) {
+    const prev = lastJobs[j.id];
+    if (prev && prev !== j.state && ['done', 'error', 'canceled'].includes(j.state)) {
+      if (current && j.podcast_id === current.id) finishedHere = true;
+      if (j.state === 'done') toast(`Fertig: ${j.title}`);
+      if (j.state === 'error') toast(`Fehler: ${j.title}`);
+    }
+  }
+  lastJobs = Object.fromEntries(list.map(j => [j.id, j.state]));
+  activeJobs = running;
+  renderJobs(list);
+  if (current && $('#eps')) {
+    if (finishedHere) await refreshStatus(); else renderEpisodes();
+  }
+  pollTimer = setTimeout(pollJobs, running.length ? 1000 : 5000);
+}
+
+function renderJobs(list) {
+  const box = $('#jobs');
+  box.classList.toggle('show', list.length > 0);
+  const running = list.filter(j => JOB_LABEL[j.state]).length;
+  $('#jobsTitle').textContent = running ? `Aufträge (${running} aktiv)` : 'Aufträge';
+  const icon = { done: '✓', error: '⚠︎', canceled: '–' };
+  $('#jobsList').innerHTML = list.slice().reverse().map(j => `
+    <div class="job ${j.state}">
+      <div class="row">
+        <span class="jt" title="${esc(j.podcast_title)} – ${esc(j.title)}">${icon[j.state] ? icon[j.state] + ' ' : ''}${esc(j.title)}</span>
+        ${JOB_LABEL[j.state] ? `<span class="tag run">${JOB_LABEL[j.state]}</span><button class="btn small ghost" data-cancel="${j.id}" title="Abbrechen">✕</button>` : ''}
+      </div>
+      ${JOB_LABEL[j.state] && j.state !== 'queued' ? `<div class="prog"><div style="width:${(j.progress * 100).toFixed(1)}%"></div></div>` : ''}
+      ${j.message ? `<div class="jm">${esc(j.message)}</div>` : ''}
+    </div>`).join('');
+}
+
+$('#jobsList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-cancel]');
+  if (b) { await api(`/api/jobs/${b.dataset.cancel}/cancel`, { method: 'POST' }); pollJobs(true); }
+});
+$('#jobsHd').onclick = e => { if (!e.target.closest('button')) $('#jobs').classList.toggle('collapsed'); };
+$('#jobsClear').onclick = async () => { await api('/api/jobs/clear', { method: 'POST' }); pollJobs(true); };
+
+// ------------------------------------------------------------ settings
+$('#settingsBtn').onclick = async () => {
+  const s = await api('/api/settings');
+  $('#sEngine').value = s.engine;
+  $('#sModel').value = s.model;
+  $('#sLang').value = s.language;
+  $('#sModels').innerHTML = s.cached_models.map(m => `<option value="${esc(m)}">`).join('') +
+    ['turbo', 'large-v3', 'medium', 'small'].map(m => `<option value="${m}">`).join('');
+  $('#sModelHint').textContent = (s.cached_models.length ? `Lokal vorhanden: ${s.cached_models.join(', ')}. ` : '') +
+    'mlx: Hugging-Face-Repo (z. B. mlx-community/whisper-large-v3-turbo) · openai-whisper: z. B. turbo, large-v3';
+  $('#settings').showModal();
+};
+$('#settingsForm').onsubmit = async e => {
+  if (e.submitter?.value !== 'save') return;
+  await api('/api/settings', { method: 'PUT', body: { engine: $('#sEngine').value, model: $('#sModel').value, language: $('#sLang').value } });
+  toast('Einstellungen gespeichert');
+};
+
+(async () => {
+  try { $('#country').value = (await api('/api/settings')).country; } catch {}
+  route();
+  pollJobs(true);
+})();
+</script>
+</body>
+</html>

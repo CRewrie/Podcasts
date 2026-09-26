@@ -1,0 +1,7 @@
+library/
+state.json
+state.tmp
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
