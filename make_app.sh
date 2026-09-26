@@ -5,15 +5,22 @@
 set -e
 REPO="$(cd "$(dirname "$0")" && pwd)"
 APP="$HOME/Applications/Podcasts.app"
-BUILD="$(mktemp -d)"
-# Python that has the dependencies: the project's .venv, else the python3 of this shell
+
+# Python that has the dependencies: the project's .venv, else the python3 of this shell.
+# /usr/bin/python3 is only a stub without the Xcode command line tools and would
+# block on an install dialog, so it is never used in that case.
 PY="$REPO/.venv/bin/python"
-[[ -x "$PY" ]] || PY="$(command -v python3)"
+[[ -x "$PY" ]] || PY="$(command -v python3 || true)"
+if [[ -z "$PY" || ( "$PY" == /usr/bin/python3 && ! -d "$(xcode-select -p 2>/dev/null)" ) ]]; then
+  echo "Fehler: kein nutzbares Python gefunden – erst die Einrichtung aus der README ausführen (brew install python, .venv)." >&2
+  exit 1
+fi
+echo "Python: $PY"
 "$PY" -c "import fastapi, uvicorn, httpx" 2>/dev/null || {
   echo "Fehler: $PY findet fastapi/uvicorn/httpx nicht – erst die Einrichtung aus der README ausführen." >&2
   exit 1
 }
-trap 'rm -rf "$BUILD"' EXIT
+echo "Baue $APP …"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -47,31 +54,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
 </dict></plist>
 EOF
 
-# Icon: headphones emoji on a rounded gradient square
-cat > "$BUILD/icon.swift" <<'EOF'
-import AppKit
-let size: CGFloat = 1024
-let img = NSImage(size: NSSize(width: size, height: size))
-img.lockFocus()
-let rect = NSRect(x: 100, y: 100, width: size - 200, height: size - 200)
-let path = NSBezierPath(roundedRect: rect, xRadius: 185, yRadius: 185)
-NSGradient(starting: NSColor(red: 0.45, green: 0.35, blue: 0.95, alpha: 1),
-           ending: NSColor(red: 0.18, green: 0.44, blue: 0.86, alpha: 1))!.draw(in: path, angle: -90)
-let emoji = NSAttributedString(string: "🎧", attributes: [.font: NSFont.systemFont(ofSize: 520)])
-let s = emoji.size()
-emoji.draw(at: NSPoint(x: (size - s.width) / 2, y: (size - s.height) / 2))
-img.unlockFocus()
-let rep = NSBitmapImageRep(data: img.tiffRepresentation!)!
-try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
-EOF
-if swift "$BUILD/icon.swift" "$BUILD/icon.png" 2>/dev/null; then
-  mkdir "$BUILD/AppIcon.iconset"
-  for s in 16 32 128 256 512; do
-    sips -z $s $s "$BUILD/icon.png" --out "$BUILD/AppIcon.iconset/icon_${s}x${s}.png" >/dev/null
-    sips -z $((s*2)) $((s*2)) "$BUILD/icon.png" --out "$BUILD/AppIcon.iconset/icon_${s}x${s}@2x.png" >/dev/null
-  done
-  iconutil -c icns "$BUILD/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
-fi
+cp "$REPO/assets/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
 touch "$APP"
 echo "Fertig: $APP"
