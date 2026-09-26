@@ -32,3 +32,16 @@ Beim ersten Transkribieren wird das Whisper-Modell (~1,6 GB) automatisch geladen
 
 Öffnet http://127.0.0.1:8765. Downloads landen in `library/<Podcast>/`,
 Einstellungen (Whisper-Modell, Sprache) über das ⚙︎-Symbol.
+
+## Als App im Dock
+
+```sh
+./make_app.sh
+```
+
+Legt `~/Applications/Podcasts.app` an. Im Finder öffnen (`open ~/Applications`)
+und ins Dock ziehen. Ein Klick startet den Server und öffnet den Browser; läuft er
+schon, öffnet sich nur ein neuer Tab. Die App beendet sich 10 Minuten nach dem
+Schließen des letzten Tabs von selbst (nicht während eines laufenden Auftrags),
+oder sofort über ⚙︎ → „Server beenden“. Log: `~/Library/Logs/Podcasts.log`.
+Nach dem Verschieben des Projektordners `./make_app.sh` erneut ausführen.

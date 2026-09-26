@@ -467,6 +467,33 @@ threading.Thread(target=worker, daemon=True).start()
 # ---------------------------------------------------------------- API
 
 app = FastAPI()
+_last_request = time.time()
+
+
+@app.middleware("http")
+async def touch(request, call_next):
+    global _last_request
+    _last_request = time.time()
+    return await call_next(request)
+
+
+@app.post("/api/quit")
+def quit_server():
+    for job in jobs:
+        job.cancel = True
+        if job.proc:
+            job.proc.terminate()
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return {"ok": True}
+
+
+def idle_watchdog(limit: float) -> None:
+    """Exit once no browser tab has polled for `limit` seconds and no job is running."""
+    while True:
+        time.sleep(15)
+        busy = any(j.state in ("queued", "downloading", "converting", "transcribing") for j in jobs)
+        if not busy and time.time() - _last_request > limit:
+            os._exit(0)
 
 
 @app.exception_handler(Exception)
@@ -717,6 +744,16 @@ def put_settings(s: SettingsIn):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-browser", action="store_true", help="don't open the browser")
+    parser.add_argument("--idle-exit", type=float, metavar="SECONDS",
+                        help="quit after this long without an open tab and without running jobs")
+    args = parser.parse_args()
     LIBRARY.mkdir(exist_ok=True)
-    threading.Timer(1.0, lambda: webbrowser.open(f"http://{HOST}:{PORT}")).start()
+    if not args.no_browser:
+        threading.Timer(1.0, lambda: webbrowser.open(f"http://{HOST}:{PORT}")).start()
+    if args.idle_exit:
+        threading.Thread(target=idle_watchdog, args=(args.idle_exit,), daemon=True).start()
     uvicorn.run(app, host=HOST, port=PORT, log_level="warning")

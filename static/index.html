@@ -168,6 +168,7 @@
       <option value="fr">Französisch</option><option value="pt">Portugiesisch</option><option value="it">Italienisch</option>
     </select>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn ghost" value="quit" style="margin-right:auto;color:var(--err)" title="Beendet den lokalen Server (laufende Aufträge werden abgebrochen)">Server beenden</button>
       <button class="btn" value="cancel">Abbrechen</button>
       <button class="btn primary" value="save" id="sSave">Speichern</button>
     </div>
@@ -545,6 +546,14 @@ $('#settingsBtn').onclick = async () => {
   $('#settings').showModal();
 };
 $('#settingsForm').onsubmit = async e => {
+  if (e.submitter?.value === 'quit') {
+    const running = activeJobs.length;
+    if (running && !confirm(`${running} laufende(r) Auftrag/Aufträge werden abgebrochen. Trotzdem beenden?`)) { e.preventDefault(); return; }
+    clearTimeout(pollTimer);
+    await api('/api/quit', { method: 'POST' }).catch(() => {});
+    document.body.innerHTML = '<main><div class="empty">Server beendet. Zum Neustarten die Podcasts-App im Dock anklicken.<br>Du kannst diesen Tab schließen.</div></main>';
+    return;
+  }
   if (e.submitter?.value !== 'save') return;
   await api('/api/settings', { method: 'PUT', body: { engine: $('#sEngine').value, model: $('#sModel').value, language: $('#sLang').value } });
   toast('Einstellungen gespeichert');
