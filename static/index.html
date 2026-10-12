@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -128,49 +128,49 @@
   <div class="bar">
     <a class="brand" href="#/">🎧 Podcasts</a>
     <form class="search" id="searchForm">
-      <input type="search" id="q" placeholder="Podcast suchen oder RSS-Feed-URL einfügen…" autocomplete="off">
-      <select id="country" title="Store-Region für die Suche">
+      <input type="search" id="q" placeholder="Search podcasts or paste an RSS feed URL…" autocomplete="off">
+      <select id="country" title="Store region for the search">
         <option>DE</option><option>JP</option><option>US</option><option>GB</option><option>FR</option>
         <option>ES</option><option>KR</option><option>CN</option><option>TW</option><option>AT</option><option>CH</option>
       </select>
-      <button class="btn primary">Suchen</button>
+      <button class="btn primary">Search</button>
     </form>
-    <button class="btn ghost" id="settingsBtn" title="Einstellungen">⚙︎</button>
+    <button class="btn ghost" id="settingsBtn" title="Settings">⚙︎</button>
   </div>
 </header>
 
 <main id="view"></main>
 
 <div id="jobs">
-  <div class="hd" id="jobsHd"><span id="jobsTitle">Aufträge</span>
-    <button class="btn small ghost" id="jobsClear" title="Erledigte entfernen">Aufräumen</button>
+  <div class="hd" id="jobsHd"><span id="jobsTitle">Jobs</span>
+    <button class="btn small ghost" id="jobsClear" title="Remove finished jobs">Clear</button>
   </div>
   <div class="list" id="jobsList"></div>
 </div>
 
 <dialog id="settings">
   <form method="dialog" id="settingsForm">
-    <h3 style="margin:0 0 4px">Untertitel-Einstellungen</h3>
+    <h3 style="margin:0 0 4px">Subtitle settings</h3>
     <label for="sEngine">Whisper-Engine</label>
     <select id="sEngine">
-      <option value="mlx">mlx_whisper (Apple Silicon, schnell)</option>
+      <option value="mlx">mlx_whisper (Apple Silicon, fast)</option>
       <option value="openai">openai-whisper</option>
     </select>
-    <label for="sModel">Modell</label>
+    <label for="sModel">Model</label>
     <input type="text" id="sModel" list="sModels">
     <datalist id="sModels"></datalist>
     <div class="hint" id="sModelHint"></div>
-    <label for="sLang">Sprache</label>
+    <label for="sLang">Language</label>
     <select id="sLang">
-      <option value="">Automatisch erkennen</option>
-      <option value="ja">Japanisch</option><option value="de">Deutsch</option><option value="en">Englisch</option>
-      <option value="zh">Chinesisch</option><option value="ko">Koreanisch</option><option value="es">Spanisch</option>
-      <option value="fr">Französisch</option><option value="pt">Portugiesisch</option><option value="it">Italienisch</option>
+      <option value="">Detect automatically</option>
+      <option value="ja">Japanese</option><option value="de">German</option><option value="en">English</option>
+      <option value="zh">Chinese</option><option value="ko">Korean</option><option value="es">Spanish</option>
+      <option value="fr">French</option><option value="pt">Portuguese</option><option value="it">Italian</option>
     </select>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
-      <button class="btn ghost" value="quit" style="margin-right:auto;color:var(--err)" title="Beendet den lokalen Server (laufende Aufträge werden abgebrochen)">Server beenden</button>
-      <button class="btn" value="cancel">Abbrechen</button>
-      <button class="btn primary" value="save" id="sSave">Speichern</button>
+      <button class="btn ghost" value="quit" style="margin-right:auto;color:var(--err)" title="Stops the local server (running jobs are canceled)">Quit server</button>
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn primary" value="save" id="sSave">Save</button>
     </div>
   </form>
 </dialog>
@@ -205,7 +205,7 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
 function fmtDur(s) {
   if (!s) return '';
   const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
@@ -230,7 +230,7 @@ function card(p, { removable = false } = {}) {
   const badge = p.downloaded ? `<span class="badge">${p.subtitled}/${p.downloaded} ✓</span>` : (p.followed ? '<span class="badge">★</span>' : '');
   return `<div class="card" data-id="${esc(p.id)}" data-feed="${esc(p.feed || '')}">
     ${badge}
-    ${removable ? '<button class="x" title="Aus Liste entfernen (Dateien bleiben)">×</button>' : ''}
+    ${removable ? '<button class="x" title="Remove from list (files are kept)">×</button>' : ''}
     <img loading="lazy" src="${esc(p.artwork)}" alt="" onerror="this.style.visibility='hidden'">
     <div class="meta"><div class="t">${esc(p.title)}</div><div class="a">${esc(p.author || p.genre || '')}</div></div>
   </div>`;
@@ -242,12 +242,12 @@ async function showHome() {
   const lib = await api('/api/library');
   const followed = lib.filter(p => p.followed), recent = lib.filter(p => !p.followed);
   if (!lib.length) {
-    view.innerHTML = `<div class="empty">Noch keine Podcasts. Suche oben nach einem Podcast oder füge eine RSS-Feed-URL ein.</div>`;
+    view.innerHTML = `<div class="empty">No podcasts yet. Search for a podcast above or paste an RSS feed URL.</div>`;
     return;
   }
   view.innerHTML =
-    (followed.length ? `<h2>Abonniert</h2><div class="grid">${followed.map(p => card(p, { removable: true })).join('')}</div>` : '') +
-    (recent.length ? `<h2>Zuletzt angesehen</h2><div class="grid">${recent.map(p => card(p, { removable: true })).join('')}</div>` : '');
+    (followed.length ? `<h2>Subscribed</h2><div class="grid">${followed.map(p => card(p, { removable: true })).join('')}</div>` : '') +
+    (recent.length ? `<h2>Recently viewed</h2><div class="grid">${recent.map(p => card(p, { removable: true })).join('')}</div>` : '');
   view.querySelectorAll('.card').forEach(el => {
     el.onclick = () => location.hash = `#/p/${el.dataset.id}`;
     const x = $('.x', el);
@@ -258,12 +258,12 @@ async function showHome() {
 async function showSearch(q) {
   $('#q').value = q;
   if (!q) return showHome();
-  view.innerHTML = '<div class="empty"><span class="spinner"></span> Suche…</div>';
+  view.innerHTML = '<div class="empty"><span class="spinner"></span> Searching…</div>';
   let results;
   try { results = await api(`/api/search?q=${encodeURIComponent(q)}&country=${$('#country').value}`); }
-  catch (e) { view.innerHTML = `<div class="empty">Suche fehlgeschlagen: ${esc(e.message)}</div>`; return; }
-  if (!results.length) { view.innerHTML = `<div class="empty">Keine Treffer für „${esc(q)}“.</div>`; return; }
-  view.innerHTML = `<h2>${results.length} Treffer für „${esc(q)}“</h2><div class="grid">${results.map(p => card(p)).join('')}</div>`;
+  catch (e) { view.innerHTML = `<div class="empty">Search failed: ${esc(e.message)}</div>`; return; }
+  if (!results.length) { view.innerHTML = `<div class="empty">No results for “${esc(q)}”.</div>`; return; }
+  view.innerHTML = `<h2>${results.length} results for “${esc(q)}”</h2><div class="grid">${results.map(p => card(p)).join('')}</div>`;
   view.querySelectorAll('.card').forEach((el, i) => el.onclick = async () => {
     const r = results[i];
     const { id } = await api('/api/podcasts', { method: 'POST', body: { feed: r.feed, title: r.title, author: r.author, artwork: r.artwork } });
@@ -276,7 +276,7 @@ $('#searchForm').onsubmit = async e => {
   const q = $('#q').value.trim();
   if (!q) return;
   if (/^https?:\/\//i.test(q)) {
-    view.innerHTML = '<div class="empty"><span class="spinner"></span> Feed wird geladen…</div>';
+    view.innerHTML = '<div class="empty"><span class="spinner"></span> Loading feed…</div>';
     try {
       const { id } = await api('/api/podcasts', { method: 'POST', body: { feed: q } });
       location.hash = `#/p/${id}`;
@@ -299,7 +299,7 @@ const SORTS = {
 };
 
 async function showPodcast(id, refresh = false) {
-  if (!current || current.id !== id) view.innerHTML = '<div class="empty"><span class="spinner"></span> Episoden werden geladen…</div>';
+  if (!current || current.id !== id) view.innerHTML = '<div class="empty"><span class="spinner"></span> Loading episodes…</div>';
   let data;
   try { data = await api(`/api/podcasts/${id}${refresh ? '?refresh=true' : ''}`); }
   catch (e) { view.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
@@ -314,28 +314,28 @@ async function showPodcast(id, refresh = false) {
         <div class="a">${esc(p.author)}</div>
         <div class="d">${esc(p.description)}</div>
         <div class="actions">
-          <button class="btn small" id="follow">${p.followed ? '★ Abonniert' : '☆ Abonnieren'}</button>
-          <button class="btn small" id="openDir">Ordner öffnen</button>
-          <button class="btn small" id="refresh">Feed aktualisieren</button>
+          <button class="btn small" id="follow">${p.followed ? '★ Subscribed' : '☆ Subscribe'}</button>
+          <button class="btn small" id="openDir">Open folder</button>
+          <button class="btn small" id="refresh">Refresh feed</button>
         </div>
       </div>
     </div>
     <div class="toolbar">
-      <input type="search" id="epFilter" placeholder="Episoden durchsuchen… (z. B. 85)">
+      <input type="search" id="epFilter" placeholder="Search episodes… (e.g. 85)">
       <select id="epSort">
-        <option value="new">Neueste zuerst</option>
-        <option value="old">Älteste zuerst</option>
-        <option value="num-desc">Episodennr. absteigend</option>
-        <option value="num-asc">Episodennr. aufsteigend</option>
-        <option value="title">Titel A–Z</option>
-        <option value="dur-desc">Längste zuerst</option>
-        <option value="dur-asc">Kürzeste zuerst</option>
+        <option value="new">Newest first</option>
+        <option value="old">Oldest first</option>
+        <option value="num-desc">Episode no. descending</option>
+        <option value="num-asc">Episode no. ascending</option>
+        <option value="title">Title A–Z</option>
+        <option value="dur-desc">Longest first</option>
+        <option value="dur-asc">Shortest first</option>
       </select>
       <select id="epStatus">
-        <option value="all">Alle</option>
-        <option value="subs">✓ Mit Untertiteln</option>
-        <option value="media">Heruntergeladen</option>
-        <option value="open">Noch offen</option>
+        <option value="all">All</option>
+        <option value="subs">✓ With subtitles</option>
+        <option value="media">Downloaded</option>
+        <option value="open">Not done yet</option>
       </select>
       <span class="count" id="epCount"></span>
     </div>
@@ -347,7 +347,7 @@ async function showPodcast(id, refresh = false) {
   $('#follow').onclick = async () => {
     p.followed = !p.followed;
     await api(`/api/podcasts/${id}`, { method: 'PATCH', body: { followed: p.followed } });
-    $('#follow').textContent = p.followed ? '★ Abonniert' : '☆ Abonnieren';
+    $('#follow').textContent = p.followed ? '★ Subscribed' : '☆ Subscribe';
   };
   $('#openDir').onclick = () => api('/api/episodes/reveal', { method: 'POST', body: { podcast_id: id, episode_id: '' } });
   $('#refresh').onclick = () => showPodcast(id, true);
@@ -385,7 +385,7 @@ function epState(eid) {
   return { media: !!s.media, subs: !!s.subs, done: !!s.done, job };
 }
 
-const JOB_LABEL = { queued: 'Wartet', downloading: 'Lädt', converting: 'Konvertiert', transcribing: 'Transkribiert' };
+const JOB_LABEL = { queued: 'Queued', downloading: 'Downloading', converting: 'Converting', transcribing: 'Transcribing' };
 
 function renderEpisodes() {
   const { data, filter, sort, status } = current;
@@ -400,12 +400,12 @@ function renderEpisodes() {
     return true;
   });
   eps = eps.slice().sort(SORTS[sort]);
-  $('#epCount').textContent = `${eps.length} von ${data.episodes.length} Episoden`;
+  $('#epCount').textContent = `${eps.length} of ${data.episodes.length} episodes`;
   const LIMIT = 300;
   const shown = eps.slice(0, current.limit || LIMIT);
   $('#eps').innerHTML = shown.length ? shown.map(ep => episodeRow(ep)).join('') +
-    (eps.length > shown.length ? `<div class="ep" style="display:block;text-align:center"><button class="btn small" id="more">Alle ${eps.length} anzeigen</button></div>` : '')
-    : '<div class="empty">Keine passenden Episoden.</div>';
+    (eps.length > shown.length ? `<div class="ep" style="display:block;text-align:center"><button class="btn small" id="more">Show all ${eps.length}</button></div>` : '')
+    : '<div class="empty">No matching episodes.</div>';
   const more = $('#more'); if (more) more.onclick = () => { current.limit = 1e9; renderEpisodes(); };
 }
 
@@ -414,26 +414,26 @@ function episodeRow(ep) {
   const complete = (s.media && s.subs) || s.done;
   const stCls = complete ? 'full' : (s.media ? 'half' : '');
   const stIcon = complete ? '✓' : (s.media ? '↓' : '');
-  const stTitle = complete ? (s.done && !s.subs ? 'Manuell als erledigt markiert (klicken zum Entfernen)' : 'Audio + Untertitel vorhanden')
-    : (s.media ? 'Heruntergeladen, noch keine Untertitel – klicken, um als erledigt zu markieren' : 'Klicken, um als erledigt zu markieren (z. B. Migaku-Untertitel)');
+  const stTitle = complete ? (s.done && !s.subs ? 'Manually marked as done (click to undo)' : 'Audio + subtitles available')
+    : (s.media ? 'Downloaded, no subtitles yet – click to mark as done' : 'Click to mark as done (e.g. Migaku subtitles)');
   let acts = '';
   if (s.job) {
     acts = `<span class="tag run">${JOB_LABEL[s.job.state]}${s.job.state !== 'queued' ? ' ' + Math.round(s.job.progress * 100) + ' %' : ''}</span>`;
   } else {
     if (!s.media) {
-      acts += `<button class="btn small primary" data-act="subs" title="Herunterladen, als MP4 speichern und mit Whisper Untertitel erzeugen">Laden + Untertitel</button>`;
-      acts += `<button class="btn small" data-act="dl" title="Nur herunterladen (MP4 für Migaku)">Nur laden</button>`;
+      acts += `<button class="btn small primary" data-act="subs" title="Download, save as MP4 and create subtitles with Whisper">Download + subtitles</button>`;
+      acts += `<button class="btn small" data-act="dl" title="Download only (MP4 for Migaku)">Download only</button>`;
     } else {
-      if (!s.subs) acts += `<button class="btn small primary" data-act="subs" title="Untertitel mit Whisper erzeugen">Untertitel erzeugen</button>`;
-      acts += `<button class="btn small" data-act="reveal" title="Im Finder zeigen">Finder</button>`;
-      acts += `<button class="btn small ghost" data-act="delete" title="Heruntergeladene Dateien löschen">🗑</button>`;
+      if (!s.subs) acts += `<button class="btn small primary" data-act="subs" title="Create subtitles with Whisper">Create subtitles</button>`;
+      acts += `<button class="btn small" data-act="reveal" title="Show in Finder">Finder</button>`;
+      acts += `<button class="btn small ghost" data-act="delete" title="Delete downloaded files">🗑</button>`;
     }
   }
   const tags = [
     ep.number != null ? `<span>#${ep.number}</span>` : '',
     `<span>${fmtDate(ep.date)}</span>`,
     ep.duration ? `<span>${fmtDur(ep.duration)}</span>` : '',
-    s.subs ? '<span class="tag ok">Untertitel</span>' : '',
+    s.subs ? '<span class="tag ok">Subtitles</span>' : '',
   ].join('');
   return `<div class="ep" data-id="${ep.id}">
     <div class="st ${stCls}" data-act="done" title="${stTitle}">${stIcon}</div>
@@ -462,7 +462,7 @@ view.addEventListener('click', async e => {
     } else if (act === 'reveal') {
       await api('/api/episodes/reveal', { method: 'POST', body });
     } else if (act === 'delete') {
-      if (!confirm('Heruntergeladene Datei und Untertitel dieser Episode löschen?')) return;
+      if (!confirm('Delete the downloaded file and subtitles of this episode?')) return;
       await api('/api/episodes/delete', { method: 'POST', body });
       await refreshStatus();
     } else if (act === 'done') {
@@ -496,8 +496,8 @@ async function pollJobs(now = false) {
     const prev = lastJobs[j.id];
     if (prev && prev !== j.state && ['done', 'error', 'canceled'].includes(j.state)) {
       if (current && j.podcast_id === current.id) finishedHere = true;
-      if (j.state === 'done') toast(`Fertig: ${j.title}`);
-      if (j.state === 'error') toast(`Fehler: ${j.title}`);
+      if (j.state === 'done') toast(`Done: ${j.title}`);
+      if (j.state === 'error') toast(`Failed: ${j.title}`);
     }
   }
   lastJobs = Object.fromEntries(list.map(j => [j.id, j.state]));
@@ -513,13 +513,13 @@ function renderJobs(list) {
   const box = $('#jobs');
   box.classList.toggle('show', list.length > 0);
   const running = list.filter(j => JOB_LABEL[j.state]).length;
-  $('#jobsTitle').textContent = running ? `Aufträge (${running} aktiv)` : 'Aufträge';
+  $('#jobsTitle').textContent = running ? `Jobs (${running} active)` : 'Jobs';
   const icon = { done: '✓', error: '⚠︎', canceled: '–' };
   $('#jobsList').innerHTML = list.slice().reverse().map(j => `
     <div class="job ${j.state}">
       <div class="row">
         <span class="jt" title="${esc(j.podcast_title)} – ${esc(j.title)}">${icon[j.state] ? icon[j.state] + ' ' : ''}${esc(j.title)}</span>
-        ${JOB_LABEL[j.state] ? `<span class="tag run">${JOB_LABEL[j.state]}</span><button class="btn small ghost" data-cancel="${j.id}" title="Abbrechen">✕</button>` : ''}
+        ${JOB_LABEL[j.state] ? `<span class="tag run">${JOB_LABEL[j.state]}</span><button class="btn small ghost" data-cancel="${j.id}" title="Cancel">✕</button>` : ''}
       </div>
       ${JOB_LABEL[j.state] && j.state !== 'queued' ? `<div class="prog"><div style="width:${(j.progress * 100).toFixed(1)}%"></div></div>` : ''}
       ${j.message ? `<div class="jm">${esc(j.message)}</div>` : ''}
@@ -541,22 +541,22 @@ $('#settingsBtn').onclick = async () => {
   $('#sLang').value = s.language;
   $('#sModels').innerHTML = s.cached_models.map(m => `<option value="${esc(m)}">`).join('') +
     ['turbo', 'large-v3', 'medium', 'small'].map(m => `<option value="${m}">`).join('');
-  $('#sModelHint').textContent = (s.cached_models.length ? `Lokal vorhanden: ${s.cached_models.join(', ')}. ` : '') +
-    'mlx: Hugging-Face-Repo (z. B. mlx-community/whisper-large-v3-turbo) · openai-whisper: z. B. turbo, large-v3';
+  $('#sModelHint').textContent = (s.cached_models.length ? `Available locally: ${s.cached_models.join(', ')}. ` : '') +
+    'mlx: Hugging Face repo (e.g. mlx-community/whisper-large-v3-turbo) · openai-whisper: e.g. turbo, large-v3';
   $('#settings').showModal();
 };
 $('#settingsForm').onsubmit = async e => {
   if (e.submitter?.value === 'quit') {
     const running = activeJobs.length;
-    if (running && !confirm(`${running} laufende(r) Auftrag/Aufträge werden abgebrochen. Trotzdem beenden?`)) { e.preventDefault(); return; }
+    if (running && !confirm(`${running} running job${running === 1 ? '' : 's'} will be canceled. Quit anyway?`)) { e.preventDefault(); return; }
     clearTimeout(pollTimer);
     await api('/api/quit', { method: 'POST' }).catch(() => {});
-    document.body.innerHTML = '<main><div class="empty">Server beendet. Zum Neustarten die Podcasts-App im Dock anklicken.<br>Du kannst diesen Tab schließen.</div></main>';
+    document.body.innerHTML = '<main><div class="empty">Server stopped. Click the Podcasts app in the Dock to start it again.<br>You can close this tab.</div></main>';
     return;
   }
   if (e.submitter?.value !== 'save') return;
   await api('/api/settings', { method: 'PUT', body: { engine: $('#sEngine').value, model: $('#sModel').value, language: $('#sLang').value } });
-  toast('Einstellungen gespeichert');
+  toast('Settings saved');
 };
 
 (async () => {
