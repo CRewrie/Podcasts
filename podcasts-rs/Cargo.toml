@@ -1,0 +1,22 @@
+[package]
+name = "podcasts"
+version = "0.1.0"
+edition = "2021"
+description = "Rust port of the local podcast browser (same API, same frontend, same data as app.py)"
+
+[dependencies]
+anyhow = "1"
+axum = "0.8"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+html-escape = "0.2"
+regex = "1"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+roxmltree = "0.20"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1_smol = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["io-util"] }
+tokio-util = "0.7"
+uuid = { version = "1", features = ["v4"] }
